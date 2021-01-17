@@ -21,8 +21,16 @@ def main():
 def handle_dialog(res, req):
     if req['request']['original_utterance']:
         res['response']['text'] = req['request']['original_utterance']
+        res['response']['buttons'] = [
+            {
+             "title":"test",
+             "payload":{},
+             "url": "https://google.com/",
+             "hide": "false"
+            }
+        ]
     else:
-        res['response']['text'] = "Я echo-bot, повторяю за тобой"
+        res['response']['text'] = ""
 
 
 if __name__ == "__main__":
