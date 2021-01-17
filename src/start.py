@@ -19,8 +19,8 @@ def main():
 
 
 def handle_dialog(res, req):
-    if req['request']['original_utternance']:
-        res['response']['text'] = req['request']['original_utternance']
+    if req['request']['original_utterance']:
+        res['response']['text'] = req['request']['original_utterance']
     else:
         res['response']['text'] = "Я echo-bot, повторяю за тобой"
 
