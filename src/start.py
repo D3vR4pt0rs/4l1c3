@@ -29,7 +29,7 @@ def handle_dialog(res, req):
     else:
         res['response'][
             'text'] = "Добро пожаловать в навык Bar'ские приключения. В ходе прохождения нашего навыка вы узнаете мног интересного об истории некоторых пивоварен и мест связанных с данной тематикой."
-        res['response']['buttons'] = alice.create_button(title="Начать приключение", payload={"action": "start"})
+        res['response']['buttons'] = [alice.create_button(title="Начать приключение", payload={"action": "start"})]
 
 
 if __name__ == "__main__":
