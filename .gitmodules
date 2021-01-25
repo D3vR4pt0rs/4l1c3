@@ -1,0 +1,3 @@
+[submodule "src/modules/alice_library"]
+	path = src/modules/alice_library
+	url = https://github.com/D3vR4pt0rs/alice_library.git
