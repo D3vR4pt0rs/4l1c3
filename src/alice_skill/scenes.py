@@ -104,7 +104,7 @@ class Welcome(KremlinTourScene):
             'чтобы я понимала, где вы находитесь.')
         directives = {'request_geolocation': {}}
         return self.make_response(text, buttons=[
-            button('Расскажи экскурсию', hide=True),
+            ALICE.create_button('Расскажи экскурсию', hide=True),
         ], directives=directives)
 
     def handle_local_intents(self, request: Request):
