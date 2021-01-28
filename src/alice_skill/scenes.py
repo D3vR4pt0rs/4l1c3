@@ -1,9 +1,39 @@
+import enum
+import inspect
+import sys
 from abc import ABC, abstractmethod
-from modules.alice_library.alice import GEOLOCATION_ALLOWED, GEOLOCATION_REJECTED
-from modules.log.log import logger
-from alice_skill.intents import START_TOUR
-from alice_skill.constants import ALICE
+from typing import Optional
+from modules.alice_library.alice import (
+    GEOLOCATION_ALLOWED,
+    GEOLOCATION_REJECTED,
+)
+from alice_skill.state import STATE_RESPONSE_KEY
+from alice_skill import intents
 from alice_skill.request import Request
+from alice_skill.constants import ALICE
+
+class Place(enum.Enum):
+    UNKNOWN = 1
+    TOWER = 2
+    CATHEDRAL = 3
+
+    @classmethod
+    def from_request(cls, request: Request, intent_name: str):
+        slot = request.intents[intent_name]['slots']['place']['value']
+        if slot == 'tower':
+            return cls.TOWER
+        elif slot == 'cathedral':
+            return cls.CATHEDRAL
+        else:
+            return cls.UNKNOWN
+
+
+def move_to_place_scene(request: Request, intent_name: str):
+    place = Place.from_request(request, intent_name)
+    if place == Place.TOWER:
+        return Tower()
+    elif place == Place.CATHEDRAL:
+        return Cathedral()
 
 
 class Scene(ABC):
@@ -29,7 +59,7 @@ class Scene(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def handle_local_intents(request: Request):
+    def handle_local_intents(request: Request) -> Optional[str]:
         raise NotImplementedError()
 
     def fallback(self, request: Request):
@@ -49,41 +79,44 @@ class Scene(ABC):
         webhook_response = {
             'response': response,
             'version': '1.0',
-            'session_state': {
+            STATE_RESPONSE_KEY: {
                 'scene': self.id(),
             },
         }
         if state is not None:
-            webhook_response['session_state'].update(state)
+            webhook_response[STATE_RESPONSE_KEY].update(state)
         return webhook_response
 
 
-class BarTourScene(Scene):
+class KremlinTourScene(Scene):
+
     def handle_global_intents(self, request):
-        if START_TOUR in request.intents:
+        if intents.START_TOUR in request.intents: 
             return StartTour()
+        elif intents.START_TOUR_WITH_PLACE in request.intents:
+            return move_to_place_scene(request, intents.START_TOUR_WITH_PLACE)
 
 
-class Welcome(BarTourScene):
+class Welcome(KremlinTourScene):
     def reply(self, request: Request):
-        text = ("Добро пожаловать в навык Bar'ские приключения."
-                'В ходе прохождения нашего навыка вы узнаете мног интересного об истории некоторых пивоварен и мест связанных с данной тематикой.'
-                'Но прежде дайте дайте доступ к геолокации чтобы я понимал, где вы находитесь.')
+        text = ('Добро пожаловать на экскурсию по кремлю Великого Новгорода. '
+            'Тут я расскажу вам исторю башен кремя и собора. Но прежде дайте дайте доступ к геолокации, '
+            'чтобы я понимала, где вы находитесь.')
         directives = {'request_geolocation': {}}
         return self.make_response(text, buttons=[
-            ALICE.create_button('Начать приключение', hide=True),
+            button('Расскажи экскурсию', hide=True),
         ], directives=directives)
 
     def handle_local_intents(self, request: Request):
-        logger.info('request type: ' + request.type)
+        print('request type: ' + request.type)
         if request.type in (
-                GEOLOCATION_ALLOWED,
-                GEOLOCATION_REJECTED,
+            GEOLOCATION_ALLOWED, 
+            GEOLOCATION_REJECTED,
         ):
             return HandleGeolocation()
 
 
-class StartTour(BarTourScene):
+class StartTour(KremlinTourScene):
     def reply(self, request: Request):
         text = 'Вы в Великом Новгороде, на территории старинного кремля. Возле какого места вы находитесь?'
         return self.make_response(text, state={
@@ -93,8 +126,39 @@ class StartTour(BarTourScene):
             ALICE.create_button('Софийский собор'),
         ])
 
+    def handle_local_intents(self, request: Request):
+        if intents.START_TOUR_WITH_PLACE_SHORT:
+            return move_to_place_scene(request, intents.START_TOUR_WITH_PLACE_SHORT)
 
-class HandleGeolocation(BarTourScene):
+
+class Tower(KremlinTourScene):
+    def reply(self, request: Request):
+        tts = ('Спасская башня. Спасская башня — проездная башня Новгородского детинца, строение конца XV века. '
+            'Башня шестиярусная, в плане представляет собой вытянутый прямоугольник 15 × 8,3 м.'
+            'Ширина проезда — 3 м. Высота стен — 19 м, а толщина стен на уровне второго яруса — 2 м.'
+        )
+        return self.make_response(
+            text='',
+            tts=tts,
+            card=ALICE.create_image_gallery(image_ids=[
+                '213044/6d63099949494a74d4a0',
+                '997614/89f90bf8bca41f92c85c',
+            ])
+        )
+
+    def handle_local_intents(self, request: Request):
+        pass
+
+
+class Cathedral(KremlinTourScene):
+    def reply(self, request: Request):
+        return self.make_response(text='В будущем здесь появится рассказ о Софийском соборе')
+
+    def handle_local_intents(self, request: Request):
+        pass
+
+
+class HandleGeolocation(KremlinTourScene):
     def reply(self, request: Request):
         if request.type == GEOLOCATION_ALLOWED:
             location = request['session']['location']
@@ -104,9 +168,23 @@ class HandleGeolocation(BarTourScene):
             return self.make_response(text)
         else:
             text = 'К сожалению, мне не удалось получить ваши координаты. Чтобы продолжить работу с навыком'
-            return self.make_response(text, directives={'request_geolocation': {}})
+            return self.make_response(text, directives={'request_geolocation': {}})        
 
     def handle_local_intents(self, request: Request):
         pass
+
+
+def _list_scenes():
+    current_module = sys.modules[__name__]
+    scenes = []
+    for name, obj in inspect.getmembers(current_module):
+        if inspect.isclass(obj) and issubclass(obj, Scene):
+            scenes.append(obj)
+    return scenes
+
+
+SCENES = {
+    scene.id(): scene for scene in _list_scenes()
+}
 
 DEFAULT_SCENE = Welcome
