@@ -14,13 +14,13 @@ def main():
     if current_scene_id is None:
         return DEFAULT_SCENE().reply(req)
     current_scene = SCENES.get(current_scene_id, DEFAULT_SCENE)()
-    next_scene = current_scene.move(request)
+    next_scene = current_scene.move(req)
     if next_scene is not None:
         print(f'Moving from scene {current_scene.id()} to {next_scene.id()}')
-        return next_scene.reply(request)
+        return next_scene.reply(req)
     else:
         print(f'Failed to parse user request at scene {current_scene.id()}')
-        return current_scene.fallback(request)
+        return current_scene.fallback(req)
 
 
 if __name__ == "__main__":

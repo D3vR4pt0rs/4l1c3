@@ -12,6 +12,7 @@ from alice_skill import intents
 from alice_skill.request import Request
 from alice_skill.constants import ALICE
 
+
 class Place(enum.Enum):
     UNKNOWN = 1
     TOWER = 2
@@ -100,7 +101,7 @@ class KremlinTourScene(Scene):
 class Welcome(KremlinTourScene):
     def reply(self, request: Request):
         text = ('Добро пожаловать на экскурсию по кремлю Великого Новгорода. '
-            'Тут я расскажу вам исторю башен кремя и собора. Но прежде дайте дайте доступ к геолокации, '
+            'Тут я расскажу вам историю башен кремя и собора. Но прежде дайте доступ к геолокации, '
             'чтобы я понимала, где вы находитесь.')
         directives = {'request_geolocation': {}}
         return self.make_response(text, buttons=[
