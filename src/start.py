@@ -1,6 +1,7 @@
 from flask import Flask, request
 from modules.log.log import logger
 from alice_skill.request import Request
+from alice_skill.state import STATE_REQUEST_KEY
 from alice_skill.scenes import DEFAULT_SCENE, SCENES
 application = Flask(__name__)
 
@@ -10,7 +11,7 @@ def main():
     logger.info(request.json)
     event = request.json
     req = Request(event)
-    current_scene_id = event.get('state', {}).get('session_state', {}).get('scene')
+    current_scene_id = event.get('state', {}).get(STATE_REQUEST_KEY, {}).get('scene')
     if current_scene_id is None:
         return DEFAULT_SCENE().reply(req)
     current_scene = SCENES.get(current_scene_id, DEFAULT_SCENE)()
