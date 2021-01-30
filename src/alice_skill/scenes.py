@@ -7,10 +7,9 @@ from modules.alice_library.alice import (
     GEOLOCATION_ALLOWED,
     GEOLOCATION_REJECTED,
 )
-from alice_skill.state import STATE_RESPONSE_KEY
-from alice_skill import intents
+
 from alice_skill.request import Request
-from alice_skill.constants import ALICE
+import alice_skill.constants as alice
 
 
 class Place(enum.Enum):
@@ -80,32 +79,32 @@ class Scene(ABC):
         webhook_response = {
             'response': response,
             'version': '1.0',
-            STATE_RESPONSE_KEY: {
+            alice.STATE_RESPONSE_KEY: {
                 'scene': self.id(),
             },
         }
         if state is not None:
-            webhook_response[STATE_RESPONSE_KEY].update(state)
+            webhook_response[alice.STATE_RESPONSE_KEY].update(state)
         return webhook_response
 
 
-class KremlinTourScene(Scene):
+class BarTourScene(Scene):
 
     def handle_global_intents(self, request):
-        if intents.START_TOUR in request.intents: 
+        if alice.START_TOUR in request.intents:
             return StartTour()
-        elif intents.START_TOUR_WITH_PLACE in request.intents:
-            return move_to_place_scene(request, intents.START_TOUR_WITH_PLACE)
+        elif alice.START_TOUR_WITH_PLACE in request.intents:
+            return move_to_place_scene(request, alice.START_TOUR_WITH_PLACE)
 
 
-class Welcome(KremlinTourScene):
+class Welcome(BarTourScene):
     def reply(self, request: Request):
-        text = ('Добро пожаловать на экскурсию по кремлю Великого Новгорода. '
-            'Тут я расскажу вам историю башен кремя и собора. Но прежде дайте доступ к геолокации, '
-            'чтобы я понимала, где вы находитесь.')
+        text = ('Добро пожаловать в Барские приключения. '
+            'Данный навык призван рассказать историю алкоголя Великого Новгорода и провести по наиболее значимым местам.'
+            'Но прежде дайте доступ к геолокации, чтобы я понимал, где вы находитесь.')
         directives = {'request_geolocation': {}}
         return self.make_response(text, buttons=[
-            ALICE.create_button('Расскажи экскурсию', hide=True),
+            alice.ALICE.create_button('Расскажи экскурсию', hide=True),
         ], directives=directives)
 
     def handle_local_intents(self, request: Request):
@@ -117,22 +116,22 @@ class Welcome(KremlinTourScene):
             return HandleGeolocation()
 
 
-class StartTour(KremlinTourScene):
+class StartTour(BarTourScene):
     def reply(self, request: Request):
-        text = 'Вы в Великом Новгороде, на территории старинного кремля. Возле какого места вы находитесь?'
+        text = ''
         return self.make_response(text, state={
             'screen': 'start_tour'
         }, buttons=[
-            ALICE.create_button('Спасская башня'),
-            ALICE.create_button('Софийский собор'),
+            alice.ALICE.create_button('Спасская башня'),
+            alice.ALICE.create_button('Софийский собор'),
         ])
 
     def handle_local_intents(self, request: Request):
-        if intents.START_TOUR_WITH_PLACE_SHORT:
-            return move_to_place_scene(request, intents.START_TOUR_WITH_PLACE_SHORT)
+        if alice.START_TOUR_WITH_PLACE_SHORT:
+            return move_to_place_scene(request, alice.START_TOUR_WITH_PLACE_SHORT)
 
 
-class Tower(KremlinTourScene):
+class Tower(BarTourScene):
     def reply(self, request: Request):
         tts = ('Спасская башня. Спасская башня — проездная башня Новгородского детинца, строение конца XV века. '
             'Башня шестиярусная, в плане представляет собой вытянутый прямоугольник 15 × 8,3 м.'
@@ -141,7 +140,7 @@ class Tower(KremlinTourScene):
         return self.make_response(
             text='',
             tts=tts,
-            card=ALICE.create_image_gallery(image_ids=[
+            card=alice.ALICE.create_image_gallery(image_ids=[
                 '213044/6d63099949494a74d4a0',
                 '997614/89f90bf8bca41f92c85c',
             ])
@@ -151,7 +150,7 @@ class Tower(KremlinTourScene):
         pass
 
 
-class Cathedral(KremlinTourScene):
+class Cathedral(BarTourScene):
     def reply(self, request: Request):
         return self.make_response(text='В будущем здесь появится рассказ о Софийском соборе')
 
@@ -159,7 +158,7 @@ class Cathedral(KremlinTourScene):
         pass
 
 
-class HandleGeolocation(KremlinTourScene):
+class HandleGeolocation(BarTourScene):
     def reply(self, request: Request):
         if request.type == GEOLOCATION_ALLOWED:
             location = request['session']['location']
