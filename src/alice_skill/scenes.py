@@ -21,7 +21,7 @@ class Activity(enum.Enum):
 
     @classmethod
     def from_request(cls, request: Request, intent_name: str):
-        slot = request.intents[intent_name]['slots']['activity']['value']
+        slot = request.intents[intent_name]['slots']['place']['value']
         if slot == 'quest':
             return cls.QUEST
         elif slot == 'quiz':
