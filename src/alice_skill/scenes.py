@@ -1,6 +1,8 @@
 import enum
 import inspect
 import sys
+import datetime
+
 from abc import ABC, abstractmethod
 from typing import Optional
 from modules.alice_library.alice import (
@@ -12,28 +14,44 @@ from alice_skill.request import Request
 import alice_skill.constants as alice
 
 
-class Place(enum.Enum):
+class Activity(enum.Enum):
     UNKNOWN = 1
-    TOWER = 2
-    CATHEDRAL = 3
+    QUEST = 2
+    QUIZ = 3
 
     @classmethod
     def from_request(cls, request: Request, intent_name: str):
-        slot = request.intents[intent_name]['slots']['place']['value']
-        if slot == 'tower':
-            return cls.TOWER
-        elif slot == 'cathedral':
-            return cls.CATHEDRAL
+        slot = request.intents[intent_name]['slots']['activity']['value']
+        if slot == 'quest':
+            return cls.QUEST
+        elif slot == 'quiz':
+            return cls.QUIZ
         else:
             return cls.UNKNOWN
 
 
-def move_to_place_scene(request: Request, intent_name: str):
-    place = Place.from_request(request, intent_name)
-    if place == Place.TOWER:
-        return Tower()
-    elif place == Place.CATHEDRAL:
-        return Cathedral()
+def move_to_activity_scene(request: Request, intent_name: str):
+    activity = Activity.from_request(request, intent_name)
+    if activity == Activity.QUIZ:
+        return Quiz()
+    elif activity == Activity.QUEST:
+        return Quest()
+
+
+def check_time():
+    opts = {"hey": ('Доброе утро', 'Добрый день', 'Добрый вечер', 'Доброй ночи')}
+
+    now = datetime.datetime.now()
+    now += datetime.timedelta(hours=3)
+    if 4 < now.hour <= 12:
+        greet = opts["hey"][2]
+    if 12 < now.hour <= 16:
+        greet = opts["hey"][3]
+    if 16 < now.hour <= 24:
+        greet = opts["hey"][4]
+    if 0 <= now.hour <= 4:
+        greet = opts["hey"][5]
+    return greet
 
 
 class Scene(ABC):
@@ -43,11 +61,13 @@ class Scene(ABC):
         return cls.__name__
 
     """Генерация ответа сцены"""
+
     @abstractmethod
     def reply(self, request):
         raise NotImplementedError()
 
     """Проверка перехода к новой сцене"""
+
     def move(self, request: Request):
         next_scene = self.handle_local_intents(request)
         if next_scene is None:
@@ -92,16 +112,16 @@ class BarTourScene(Scene):
 
     def handle_global_intents(self, request):
         if alice.START_TOUR in request.intents:
-            return StartTour()
-        elif alice.START_TOUR_WITH_PLACE in request.intents:
-            return move_to_place_scene(request, alice.START_TOUR_WITH_PLACE)
+            return StartQuest()
+        elif alice.START_ACTIVITY in request.intents:
+            return move_to_activity_scene(request, alice.START_ACTIVITY)
 
 
 class Welcome(BarTourScene):
     def reply(self, request: Request):
         text = ('Добро пожаловать в Барские приключения. '
-            'Данный навык призван рассказать историю алкоголя Великого Новгорода и провести по наиболее значимым местам.'
-            'Но прежде дайте доступ к геолокации, чтобы я понимал, где вы находитесь.')
+                'Данный навык призван рассказать историю алкоголя Великого Новгорода и провести по наиболее значимым местам.'
+                'Но прежде дайте доступ к геолокации, чтобы я понимал, где вы находитесь.')
         directives = {'request_geolocation': {}}
         return self.make_response(text, buttons=[
             alice.ALICE.create_button('Расскажи экскурсию', hide=True),
@@ -110,15 +130,15 @@ class Welcome(BarTourScene):
     def handle_local_intents(self, request: Request):
         print('request type: ' + request.type)
         if request.type in (
-            GEOLOCATION_ALLOWED, 
-            GEOLOCATION_REJECTED,
+                GEOLOCATION_ALLOWED,
+                GEOLOCATION_REJECTED,
         ):
             return HandleGeolocation()
 
 
-class StartTour(BarTourScene):
+class StartQuest(BarTourScene):
     def reply(self, request: Request):
-        text = ''
+        text = f'{check_time()},путник. Не хочешь ли поучаствовать в квесте и узнать историю алкоголя в Великом Новгороде?'
         return self.make_response(text, state={
             'screen': 'start_tour'
         }, buttons=[
@@ -127,35 +147,8 @@ class StartTour(BarTourScene):
         ])
 
     def handle_local_intents(self, request: Request):
-        if alice.START_TOUR_WITH_PLACE_SHORT:
-            return move_to_place_scene(request, alice.START_TOUR_WITH_PLACE_SHORT)
-
-
-class Tower(BarTourScene):
-    def reply(self, request: Request):
-        tts = ('Спасская башня. Спасская башня — проездная башня Новгородского детинца, строение конца XV века. '
-            'Башня шестиярусная, в плане представляет собой вытянутый прямоугольник 15 × 8,3 м.'
-            'Ширина проезда — 3 м. Высота стен — 19 м, а толщина стен на уровне второго яруса — 2 м.'
-        )
-        return self.make_response(
-            text='',
-            tts=tts,
-            card=alice.ALICE.create_image_gallery(image_ids=[
-                '213044/6d63099949494a74d4a0',
-                '997614/89f90bf8bca41f92c85c',
-            ])
-        )
-
-    def handle_local_intents(self, request: Request):
-        pass
-
-
-class Cathedral(BarTourScene):
-    def reply(self, request: Request):
-        return self.make_response(text='В будущем здесь появится рассказ о Софийском соборе')
-
-    def handle_local_intents(self, request: Request):
-        pass
+        if alice.START_ACTIVITY:
+            return move_to_activity_scene(request, alice.START_ACTIVITY)
 
 
 class HandleGeolocation(BarTourScene):
@@ -168,7 +161,23 @@ class HandleGeolocation(BarTourScene):
             return self.make_response(text)
         else:
             text = 'К сожалению, мне не удалось получить ваши координаты. Чтобы продолжить работу с навыком'
-            return self.make_response(text, directives={'request_geolocation': {}})        
+            return self.make_response(text, directives={'request_geolocation': {}})
+
+    def handle_local_intents(self, request: Request):
+        pass
+
+
+class Quest(BarTourScene):
+    def reply(self, request: Request):
+        return self.make_response(text='Квестовик пьян, заходи в следующий раз.')
+
+    def handle_local_intents(self, request: Request):
+        pass
+
+
+class Quiz(BarTourScene):
+    def reply(self, request: Request):
+        return self.make_response(text='К сожалению викторину мы пропили, но скоро вернем.')
 
     def handle_local_intents(self, request: Request):
         pass

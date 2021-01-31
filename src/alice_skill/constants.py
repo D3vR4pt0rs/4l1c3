@@ -11,4 +11,5 @@ STATE_RESPONSE_KEY = 'session_state'
 # Intents
 START_TOUR = 'start_tour'
 START_TOUR_WITH_PLACE = 'start_tour_with_place'
-START_TOUR_WITH_PLACE_SHORT = 'start_tour_with_place_short'
+START_ACTIVITY = 'start_activity'
+START_ACTIVITY_SHORT = 'start_activity_short'
