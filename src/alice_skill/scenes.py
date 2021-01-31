@@ -44,13 +44,13 @@ def check_time():
     now = datetime.datetime.now()
     now += datetime.timedelta(hours=3)
     if 4 < now.hour <= 12:
-        greet = opts["hey"][2]
+        greet = opts["hey"][0]
     if 12 < now.hour <= 16:
-        greet = opts["hey"][3]
+        greet = opts["hey"][1]
     if 16 < now.hour <= 24:
-        greet = opts["hey"][4]
+        greet = opts["hey"][2]
     if 0 <= now.hour <= 4:
-        greet = opts["hey"][5]
+        greet = opts["hey"][3]
     return greet
 
 
