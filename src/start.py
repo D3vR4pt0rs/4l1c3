@@ -21,7 +21,7 @@ def main():
         return next_scene.reply(req)
     else:
         logger.info(f'Failed to parse user request at scene {current_scene.id()}')
-        return current_scene.fallback(req)
+        return current_scene.fallback()
 
 
 if __name__ == "__main__":
