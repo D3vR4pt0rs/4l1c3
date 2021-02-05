@@ -14,3 +14,9 @@ START_TOUR_WITH_PLACE = 'start_tour_with_place'
 START_ACTIVITY = 'start_activity'
 START_ACTIVITY_SHORT = 'start_activity_short'
 FIND_NEAR_PLACE = 'find_near_place'
+
+# Coordinates
+ENCHANTRESS_location = {'lat': 58.521698, 'lon': 31.268701}
+ZAVOD_BAR_location = {'lat': 58.52703,'lon': 31.259656}
+JAZZ_BLUES_location = {'lat': 58.518129,'lon': 31.286911}
+GOAT_location = {'lat': 58.526687,'lon': 31.279455}

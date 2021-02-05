@@ -1,8 +1,16 @@
 import enum
 import inspect
 import sys
+import math
 from abc import ABC, abstractmethod
 from typing import Optional
+
+from constants import (
+    ENCHANTRESS_location,
+    ZAVOD_BAR_location,
+    JAZZ_BLUES_location,
+    GOAT_location
+)
 
 from modules.alice_library.alice import (
     GEOLOCATION_ALLOWED,
@@ -211,18 +219,43 @@ class NotAllowed(BarTourScene):
         pass
 
 
+
+
+
 class Place(enum.Enum):
     ENCHANTRESS = 1
     ZAVOD_BAR = 2
     JAZZ_BLUES = 3
     GOAT = 4
 
+    def distance(cls, client_location=None, bar_location=None):
+        if bar_location is None:
+            bar_location = {'lat': 99.0, 'lon': 99.0}
+        if client_location is None:
+            client_location = {'lat': 0.0, 'lon': 0.0}
+
+        return math.sqrt(pow((bar_location['lat'] - client_location['lat']), 2) + pow((bar_location['lon'] - client_location['lon']), 2))
+
     @classmethod
     def place_from_geolocation(cls, request: Request):
-        location = request['session']['location']
-        lat = location['lat']
-        lon = location['lon']
-        return cls.ZAVOD_BAR
+        location_full = request['session']['location']
+        location = {location_full['lat'], location_full['lon']}
+        #location = {'lat': 58.521698, 'lon': 31.268701}
+
+        distances = {}
+        distances.update(enchantress=cls.distance(location, ENCHANTRESS_location))
+        distances.update(zavod_bar=cls.distance(location, ZAVOD_BAR_location))
+        distances.update(jazz_blues=cls.distance(location, JAZZ_BLUES_location))
+        distances.update(goat=cls.distance(location, GOAT_location))
+        min_distanation = min(distances.values())
+
+        #debug stuff
+        print(distances)
+
+        if distances['enchantress'] == min_distanation: return cls.ENCHANTRESS
+        if distances['zavod_bar'] == min_distanation: return cls.ZAVOD_BAR
+        if distances['jazz_blues'] == min_distanation: return cls.JAZZ_BLUES
+        if distances['goat'] == min_distanation: return cls.GOAT
 
 
 def move_to_place_scene(request: Request):
