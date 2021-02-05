@@ -1,16 +1,18 @@
+import enum
 import inspect
 import sys
-import enum
 from abc import ABC, abstractmethod
 from typing import Optional
+
 from modules.alice_library.alice import (
     GEOLOCATION_ALLOWED,
     GEOLOCATION_REJECTED,
 )
+from modules.log.log import logger
 
-from alice_skill.request import Request
 import alice_skill.constants as alice
 from alice_skill.helper import check_time
+from alice_skill.request import Request
 
 
 class Scene(ABC):
@@ -89,7 +91,7 @@ class Welcome(BarTourScene):
         ], directives=directives)
 
     def handle_local_intents(self, request: Request):
-        print('request type: ' + request.type)
+        logger.info('request type: ' + request.type)
         if request.type in (
                 GEOLOCATION_ALLOWED,
                 GEOLOCATION_REJECTED,
@@ -121,7 +123,8 @@ class HandleGeolocation(BarTourScene):
             text = f'Ваши координаты: широта {lat}, долгота {lon}'
             return self.make_response(text)
         else:
-            text = 'К сожалению, мне не удалось получить ваши координаты. Чтобы продолжить работу с навыком'
+            text = ('К сожалению, мне не удалось получить ваши координаты.' 
+                    'Поэтому я не могу вам советовать и провести квест, но можем поиграть в викторину')
             return self.make_response(text, directives={'request_geolocation': {}})
 
     def handle_local_intents(self, request: Request):
@@ -130,14 +133,24 @@ class HandleGeolocation(BarTourScene):
 
 class Activity(enum.Enum):
     UNKNOWN = 1
-    QUEST = 2
-    QUIZ = 3
+    NOT_ALLOWED = 2
+    QUEST = 3
+    QUIZ = 4
+    ADVICE = 5
 
     @classmethod
     def from_request(cls, request: Request, intent_name: str):
         slot = request.intents[intent_name]['slots']['place']['value']
         if slot == 'quest':
-            return cls.QUEST
+            if request.type == GEOLOCATION_ALLOWED:
+                return cls.QUEST
+            else:
+                return cls.NOT_ALLOWED
+        if slot == 'advice':
+            if request.type == GEOLOCATION_ALLOWED:
+                return cls.ADVICE
+            else:
+                return cls.NOT_ALLOWED
         elif slot == 'quiz':
             return cls.QUIZ
         else:
@@ -150,6 +163,12 @@ def move_to_activity_scene(request: Request, intent_name: str):
         return Quiz()
     elif activity == Activity.QUEST:
         return Quest()
+    elif activity == Activity.ADVICE:
+        return Advice()
+    elif activity == Activity.UNKNOWN:
+        return Unknown()
+    elif activity == Activity.NOT_ALLOWED:
+        return NotAllowed()
 
 
 class Quest(BarTourScene):
@@ -163,6 +182,30 @@ class Quest(BarTourScene):
 class Quiz(BarTourScene):
     def reply(self, request: Request):
         return self.make_response(text='К сожалению викторину мы пропили, но скоро вернем.')
+
+    def handle_local_intents(self, request: Request):
+        pass
+
+
+class Advice(BarTourScene):
+    def reply(self, request: Request):
+        return self.make_response(text='Советы давать не могу и тебе не советую')
+
+    def handle_local_intents(self, request: Request):
+        pass
+
+
+class Unknown(BarTourScene):
+    def reply(self, request: Request):
+        return self.make_response(text='Извини друг, я понимаю что ты хочешь.')
+
+    def handle_local_intents(self, request: Request):
+        pass
+
+
+class NotAllowed(BarTourScene):
+    def reply(self, request: Request):
+        return self.make_response(text='Прости, но пока Большой брат не следит за тобой, я не могу помочь.')
 
     def handle_local_intents(self, request: Request):
         pass
