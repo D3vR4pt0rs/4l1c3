@@ -242,15 +242,23 @@ class Place(enum.Enum):
         distances.update(zavod_bar=cls._distance(location, ZAVOD_BAR_location))
         distances.update(jazz_blues=cls._distance(location, JAZZ_BLUES_location))
         distances.update(goat=cls._distance(location, GOAT_location))
-        min_distanation = min(distances.values())
 
-        #logger
+        # logger
         logger.info(distances)
 
-        if distances['enchantress'] == min_distanation: return cls.ENCHANTRESS
-        if distances['zavod_bar'] == min_distanation: return cls.ZAVOD_BAR
-        if distances['jazz_blues'] == min_distanation: return cls.JAZZ_BLUES
-        if distances['goat'] == min_distanation: return cls.GOAT
+        key_list = list(distances.keys())
+        val_list = list(distances.values())
+        min_distance = min(val_list)
+        bar_name = key_list[val_list.index(min_distance)]
+
+        if bar_name == "enchantress":
+            return cls.ENCHANTRESS
+        elif bar_name == "zavod_bar":
+            return cls.ZAVOD_BAR
+        elif bar_name == "jazz_blues":
+            return cls.JAZZ_BLUES
+        elif bar_name == "goat":
+            return cls.GOAT
 
 
 def move_to_place_scene(request: Request):
