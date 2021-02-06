@@ -9,6 +9,10 @@ SESSION_STORAGE = {}
 STATE_REQUEST_KEY = 'session'
 STATE_RESPONSE_KEY = 'session_state'
 
+#Scene
+QUIZ = 'Quiz'
+QUEST = 'Quest'
+
 # Intents
 START_TOUR = 'start_tour'
 START_TOUR_WITH_PLACE = 'start_tour_with_place'
