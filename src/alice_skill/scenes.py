@@ -1,8 +1,16 @@
 import enum
 import inspect
 import sys
+import math
 from abc import ABC, abstractmethod
 from typing import Optional
+
+from constants import (
+    ENCHANTRESS_location,
+    ZAVOD_BAR_location,
+    JAZZ_BLUES_location,
+    GOAT_location
+)
 
 from modules.alice_library.alice import (
     GEOLOCATION_ALLOWED,
@@ -211,18 +219,46 @@ class NotAllowed(BarTourScene):
         pass
 
 
+
+
+
 class Place(enum.Enum):
     ENCHANTRESS = 1
     ZAVOD_BAR = 2
     JAZZ_BLUES = 3
     GOAT = 4
 
+    def _distance(cls, client_location={}, bar_location={}):
+        return math.sqrt(pow((bar_location['lat'] - client_location['lat']), 2) + pow((bar_location['lon'] - client_location['lon']), 2))
+
     @classmethod
     def place_from_geolocation(cls, request: Request):
-        location = request['session']['location']
-        lat = location['lat']
-        lon = location['lon']
-        return cls.ZAVOD_BAR
+        location_full = request['session']['location']
+        location = {location_full['lat'], location_full['lon']}
+        #location = {'lat': 58.521698, 'lon': 31.268701}
+
+        distances = {}
+        distances.update(enchantress=cls._distance(location, ENCHANTRESS_location))
+        distances.update(zavod_bar=cls._distance(location, ZAVOD_BAR_location))
+        distances.update(jazz_blues=cls._distance(location, JAZZ_BLUES_location))
+        distances.update(goat=cls._distance(location, GOAT_location))
+
+        # logger
+        logger.info(distances)
+
+        key_list = list(distances.keys())
+        val_list = list(distances.values())
+        min_distance = min(val_list)
+        bar_name = key_list[val_list.index(min_distance)]
+
+        if bar_name == "enchantress":
+            return cls.ENCHANTRESS
+        elif bar_name == "zavod_bar":
+            return cls.ZAVOD_BAR
+        elif bar_name == "jazz_blues":
+            return cls.JAZZ_BLUES
+        elif bar_name == "goat":
+            return cls.GOAT
 
 
 def move_to_place_scene(request: Request):
