@@ -111,7 +111,7 @@ class Welcome(BarTourScene):
 
 class StartQuest(BarTourScene):
     def reply(self, request: Request):
-        alice.SESSION_STORAGE[request.user_id] = {}
+        alice.SESSION_STORAGE.pop(request.user_id)
         text = f'{check_time()}, путник. Не хочешь ли поучаствовать в квесте и узнать историю алкоголя в Великом Новгороде?'
         return self.make_response(text, state={
             'screen': 'start_tour'
@@ -216,7 +216,7 @@ class Quiz(BarTourScene):
         return event, right_answer, buttons
 
     def reply(self, request: Request):
-        if request.user_id not in alice.SESSION_STORAGE or alice.SESSION_STORAGE[request.user_id] == {}:
+        if request.user_id not in alice.SESSION_STORAGE:
             alice.SESSION_STORAGE[request.user_id] = {}
             text, buttons = self._choose_theme()
             return self.make_response(state={'screen': 'quiz'}, text=text, buttons=buttons)
