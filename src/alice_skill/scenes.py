@@ -5,13 +5,6 @@ import math
 from abc import ABC, abstractmethod
 from typing import Optional
 
-from constants import (
-    ENCHANTRESS_location,
-    ZAVOD_BAR_location,
-    JAZZ_BLUES_location,
-    GOAT_location
-)
-
 from modules.alice_library.alice import (
     GEOLOCATION_ALLOWED,
     GEOLOCATION_REJECTED,
@@ -238,10 +231,10 @@ class Place(enum.Enum):
         #location = {'lat': 58.521698, 'lon': 31.268701}
 
         distances = {}
-        distances.update(enchantress=cls._distance(location, ENCHANTRESS_location))
-        distances.update(zavod_bar=cls._distance(location, ZAVOD_BAR_location))
-        distances.update(jazz_blues=cls._distance(location, JAZZ_BLUES_location))
-        distances.update(goat=cls._distance(location, GOAT_location))
+        distances.update(enchantress=cls._distance(location, alice.ENCHANTRESS_location))
+        distances.update(zavod_bar=cls._distance(location, alice.ZAVOD_BAR_location))
+        distances.update(jazz_blues=cls._distance(location, alice.JAZZ_BLUES_location))
+        distances.update(goat=cls._distance(location, alice.GOAT_location))
 
         # logger
         logger.info(distances)
