@@ -215,13 +215,12 @@ class Quiz(BarTourScene):
         return event, right_answer, buttons
 
     def reply(self, request: Request):
-        if request.user_id not in alice.SESSION_STORAGE:
+        if request.user_id not in alice.SESSION_STORAGE or request.is_new_session:
             alice.SESSION_STORAGE[request.user_id] = {}
             text, buttons = self._choose_theme()
             return self.make_response(state={'screen': 'quiz'}, text=text, buttons=buttons)
         else:
-            if request.command in ['история', "места", "коктейли", "сервировка"] and "type" not in \
-                    alice.SESSION_STORAGE[request.user_id]:
+            if request.command in ['история', "места", "коктейли", "сервировка"]:
                 alice.SESSION_STORAGE[request.user_id].update(type=request.command)
                 _a = list(filter(lambda x: request.command == events[x][2], events.keys()))
                 shuffle(_a)
@@ -236,6 +235,8 @@ class Quiz(BarTourScene):
                 return self.make_response(state={'screen': 'quiz'}, text=event, buttons=buttons)
             elif request.command == alice.SESSION_STORAGE[request.user_id]["answer"]:
                 event, right_answer, buttons = self._create_new_question(request)
+                alice.SESSION_STORAGE[request.user_id].update(event=event)
+                alice.SESSION_STORAGE[request.user_id].update(answer=right_answer)
                 text = ('Верно!\n' f'{event}')
                 return self.make_response(state={'screen': 'quiz'}, text=text, buttons=buttons)
             elif request.command == 'выбрать тематику':
