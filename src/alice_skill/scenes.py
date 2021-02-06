@@ -111,7 +111,7 @@ class Welcome(BarTourScene):
 
 class StartQuest(BarTourScene):
     def reply(self, request: Request):
-        alice.SESSION_STORAGE.pop(request.user_id)
+        alice.SESSION_STORAGE.pop(request.user_id, None)
         text = f'{check_time()}, путник. Не хочешь ли поучаствовать в квесте и узнать историю алкоголя в Великом Новгороде?'
         return self.make_response(text, state={
             'screen': 'start_tour'
@@ -154,12 +154,12 @@ class Activity(enum.Enum):
     def from_request(cls, request: Request, intent_name: str):
         slot = request.intents[intent_name]['slots']['place']['value']
         if slot == 'quest':
-            if request.type == GEOLOCATION_ALLOWED:
+            if alice.ALICE.check_location(request):
                 return cls.QUEST
             else:
                 return cls.NOT_ALLOWED
         if slot == 'advice':
-            if request.type == GEOLOCATION_ALLOWED:
+            if alice.ALICE.check_location(request):
                 return cls.ADVICE
             else:
                 return cls.NOT_ALLOWED
