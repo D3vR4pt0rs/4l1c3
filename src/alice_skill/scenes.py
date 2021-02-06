@@ -228,12 +228,7 @@ class Place(enum.Enum):
     JAZZ_BLUES = 3
     GOAT = 4
 
-    def _distance(cls, client_location=None, bar_location=None):
-        if bar_location is None:
-            bar_location = {'lat': 99.0, 'lon': 99.0}
-        if client_location is None:
-            client_location = {'lat': 0.0, 'lon': 0.0}
-
+    def _distance(cls, client_location={}, bar_location={}):
         return math.sqrt(pow((bar_location['lat'] - client_location['lat']), 2) + pow((bar_location['lon'] - client_location['lon']), 2))
 
     @classmethod
