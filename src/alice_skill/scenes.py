@@ -1,6 +1,7 @@
 import enum
 import inspect
 import sys
+import csv
 import math
 from abc import ABC, abstractmethod
 from typing import Optional
@@ -15,6 +16,9 @@ import alice_skill.constants as alice
 from alice_skill.helper import check_time
 from alice_skill.request import Request
 
+with open("quiz.csv", "r", encoding="utf8") as csvfile:
+    data = csv.DictReader(csvfile, delimiter=",", quotechar=" ")
+    events = {x["event"]: [x["right_answer"], x["wrong_answer"]] for x in data}
 
 class Scene(ABC):
 
@@ -182,10 +186,23 @@ class Quest(BarTourScene):
 
 class Quiz(BarTourScene):
     def reply(self, request: Request):
-        return self.make_response(text='К сожалению викторину мы пропили, но скоро вернем.')
+        if request.user_id not in alice.SESSION_STORAGE:
+            user_storage = {}
+            text = {'Выбери тематику викторины'}
+            buttons = [
+                alice.ALICE.create_button(title='История', hide=True),
+                alice.ALICE.create_button(title='По местам', hide=True),
+                alice.ALICE.create_button(title='Коктейли', hide=True),
+                alice.ALICE.create_button(title='Создание и подача', hide=True)
+            ]
+            alice.SESSION_STORAGE[request.user_id] = user_storage
+            return self.make_response(text=text, buttons=buttons)
+        else:
+            return self.make_response(text='К сожалению викторину мы пропили, но скоро вернем.')
 
     def handle_local_intents(self, request: Request):
-        pass
+        if alice.STOP_ACTIVITY:
+            return StartQuest()
 
 
 class Advice(BarTourScene):
@@ -210,9 +227,6 @@ class NotAllowed(BarTourScene):
 
     def handle_local_intents(self, request: Request):
         pass
-
-
-
 
 
 class Place(enum.Enum):
