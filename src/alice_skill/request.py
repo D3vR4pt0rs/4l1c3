@@ -12,3 +12,19 @@ class Request:
     @property
     def type(self):
         return self.request_body.get('request', {}).get('type')
+
+    @property
+    def session(self):
+        return self.request_body.get('session')
+
+    @property
+    def user_id(self):
+        return self.session['user_id']
+
+    @property
+    def is_new_session(self):
+        return bool(self.session['new'])
+
+    @property
+    def command(self):
+        return self._request_dict['request']['command']
