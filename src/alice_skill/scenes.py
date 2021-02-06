@@ -214,7 +214,6 @@ class Quiz(BarTourScene):
         return event, right_answer, buttons
 
     def reply(self, request: Request):
-        logger.info(alice.SESSION_STORAGE[request.user_id])
         if request.user_id not in alice.SESSION_STORAGE:
             alice.SESSION_STORAGE[request.user_id] = {}
             text, buttons = self._choose_theme()
