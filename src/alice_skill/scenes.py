@@ -82,9 +82,9 @@ class Scene(ABC):
 class BarTourScene(Scene):
 
     def handle_global_intents(self, request):
-        if alice.QUIZ in request.session["scene"]:
+        if alice.QUIZ in request.scene:
             return Quiz()
-        elif alice.QUEST in request.session["scene"]:
+        elif alice.QUEST in request.scene:
             return Quest()
 
         if alice.START_TOUR in request.intents:

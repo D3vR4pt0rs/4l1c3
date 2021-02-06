@@ -27,4 +27,8 @@ class Request:
 
     @property
     def command(self):
-        return self._request_dict['request']['command']
+        return self.request_body['request']['command']
+
+    @property
+    def scene(self):
+        return self.request_body['state']['session']['scene']
