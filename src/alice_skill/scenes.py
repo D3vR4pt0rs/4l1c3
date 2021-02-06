@@ -191,7 +191,7 @@ class Quest(BarTourScene):
 
 class Quiz(BarTourScene):
     def _choose_theme(self):
-        text = {'Выбери тематику викторины'}
+        text = 'Выбери тематику викторины'
         buttons = [
             alice.ALICE.create_button(title='История', hide=True),
             alice.ALICE.create_button(title='Места', hide=True),
