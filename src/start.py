@@ -16,9 +16,9 @@ def main():
     if current_scene_id is None:
         return DEFAULT_SCENE().reply(req)
     elif current_scene_id == QUIZ:
-        return Quiz.reply(req)
+        return Quiz().reply(req)
     elif current_scene_id == QUEST:
-        return Quest.reply(req)
+        return Quest().reply(req)
 
     current_scene = SCENES.get(current_scene_id, DEFAULT_SCENE)()
     next_scene = current_scene.move(req)
