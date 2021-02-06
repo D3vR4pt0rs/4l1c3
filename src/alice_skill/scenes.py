@@ -4,6 +4,8 @@ import sys
 import csv
 import math
 from abc import ABC, abstractmethod
+from itertools import cycle
+from random import shuffle
 from typing import Optional
 
 from modules.alice_library.alice import (
@@ -18,7 +20,8 @@ from alice_skill.request import Request
 
 with open("quiz.csv", "r", encoding="utf8") as csvfile:
     data = csv.DictReader(csvfile, delimiter=",", quotechar=" ")
-    events = {x["event"]: [x["right_answer"], x["wrong_answer"]] for x in data}
+    events = {x["event"]: [x["right_answer"], x["wrong_answer"], x["type"]] for x in data}
+
 
 class Scene(ABC):
 
@@ -128,7 +131,7 @@ class HandleGeolocation(BarTourScene):
             text = f'Ваши координаты: широта {lat}, долгота {lon}'
             return self.make_response(text)
         else:
-            text = ('К сожалению, мне не удалось получить ваши координаты.' 
+            text = ('К сожалению, мне не удалось получить ваши координаты.'
                     'Поэтому я не могу вам советовать и провести квест, но можем поиграть в викторину')
             return self.make_response(text, directives={'request_geolocation': {}})
 
@@ -184,21 +187,60 @@ class Quest(BarTourScene):
         pass
 
 
+
 class Quiz(BarTourScene):
+    def _choose_theme(self):
+        text = {'Выбери тематику викторины'}
+        buttons = [
+            alice.ALICE.create_button(title='История', hide=True),
+            alice.ALICE.create_button(title='По местам', hide=True),
+            alice.ALICE.create_button(title='Коктейли', hide=True),
+            alice.ALICE.create_button(title='Создание и подача', hide=True)
+        ]
+        return text, buttons
+
+    def _create_buttons(self, event, right_answer):
+        buttons = [alice.ALICE.create_button(title=right_answer, hide=True)]
+        for title in events[event][1]:
+            buttons.append(alice.ALICE.create_button(title=title, hide=True))
+        buttons.append(alice.ALICE.create_button(title="Выбрать тематику", hide=True))
+
+    def _create_new_question(self, request: Request,):
+        event = next(alice.SESSION_STORAGE[request.user_id]["questions"])
+        right_answer = events[event][0]
+        buttons = self._create_buttons(event, right_answer)
+        return event, right_answer, buttons
+
     def reply(self, request: Request):
         if request.user_id not in alice.SESSION_STORAGE:
-            user_storage = {}
-            text = {'Выбери тематику викторины'}
-            buttons = [
-                alice.ALICE.create_button(title='История', hide=True),
-                alice.ALICE.create_button(title='По местам', hide=True),
-                alice.ALICE.create_button(title='Коктейли', hide=True),
-                alice.ALICE.create_button(title='Создание и подача', hide=True)
-            ]
-            alice.SESSION_STORAGE[request.user_id] = user_storage
+            alice.SESSION_STORAGE[request.user_id] = {}
+            text, buttons = self._choose_theme()
             return self.make_response(text=text, buttons=buttons)
         else:
-            return self.make_response(text='К сожалению викторину мы пропили, но скоро вернем.')
+            if request.command in ['история', "по местам", "коктейли", "создание и подача"] and "type" not in \
+                    alice.SESSION_STORAGE[request.user_id]:
+                alice.SESSION_STORAGE[request.user_id]["type"] == request.command
+                _a = list(filter(lambda x: request.command == events[x][2], events.keys()))
+                shuffle(_a)
+                inf_list = cycle(_a)
+                alice.SESSION_STORAGE[request.user_id]["questions"] == inf_list
+
+                event, right_answer, buttons = self._create_new_question(request)
+
+                alice.SESSION_STORAGE[request.user_id]["event"] == event
+                alice.SESSION_STORAGE[request.user_id]["answer"] == right_answer
+
+                return self.make_response(text=event, buttons=buttons)
+            elif request.command == alice.SESSION_STORAGE[request.user_id]["answer"]:
+                event, right_answer, buttons = self._create_new_question()
+                text = ('Верно!\n' f'{event}')
+                return self.make_response(text=text, buttons=buttons)
+            elif request.command == 'выбрать тематику':
+                text, buttons = self._choose_theme()
+                return self.make_response(text=text, buttons=buttons)
+            else:
+                buttons = self._create_buttons(alice.SESSION_STORAGE[request.user_id]["event"], alice.SESSION_STORAGE[request.user_id]["answer"])
+                return self.make_response(text=("Неверно! Попробуй еще раз."), buttons= buttons)
 
     def handle_local_intents(self, request: Request):
         if alice.STOP_ACTIVITY:
@@ -236,13 +278,15 @@ class Place(enum.Enum):
     GOAT = 4
 
     def _distance(cls, client_location={}, bar_location={}):
-        return math.sqrt(pow((bar_location['lat'] - client_location['lat']), 2) + pow((bar_location['lon'] - client_location['lon']), 2))
+        return math.sqrt(
+            pow((bar_location['lat'] - client_location['lat']), 2) + pow((bar_location['lon'] - client_location['lon']),
+                                                                         2))
 
     @classmethod
     def place_from_geolocation(cls, request: Request):
         location_full = request['session']['location']
         location = {location_full['lat'], location_full['lon']}
-        #location = {'lat': 58.521698, 'lon': 31.268701}
+        # location = {'lat': 58.521698, 'lon': 31.268701}
 
         distances = {}
         distances.update(enchantress=cls._distance(location, alice.ENCHANTRESS_location))
