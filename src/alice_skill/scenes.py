@@ -3,6 +3,7 @@ import inspect
 import sys
 import csv
 import math
+import os
 from abc import ABC, abstractmethod
 from itertools import cycle
 from random import shuffle
@@ -18,9 +19,10 @@ import alice_skill.constants as alice
 from alice_skill.helper import check_time
 from alice_skill.request import Request
 
-with open("quiz.csv", "r", encoding="utf8") as csvfile:
-    data = csv.DictReader(csvfile, delimiter=",", quotechar=" ")
-    events = {x["event"]: [x["right_answer"], x["wrong_answer"], x["type"]] for x in data}
+
+with open("quiz.csv", "r", encoding="windows-1251") as csvfile:
+    data = csv.DictReader(csvfile, delimiter=";", quotechar=" ")
+    events = {x["question"]: [x["right_answer"], [x["wrong_answer1"], x["wrong_answer2"]], x["type"]] for x in data}
 
 
 class Scene(ABC):
@@ -187,15 +189,14 @@ class Quest(BarTourScene):
         pass
 
 
-
 class Quiz(BarTourScene):
     def _choose_theme(self):
         text = {'Выбери тематику викторины'}
         buttons = [
             alice.ALICE.create_button(title='История', hide=True),
-            alice.ALICE.create_button(title='По местам', hide=True),
+            alice.ALICE.create_button(title='Места', hide=True),
             alice.ALICE.create_button(title='Коктейли', hide=True),
-            alice.ALICE.create_button(title='Создание и подача', hide=True)
+            alice.ALICE.create_button(title='Сервировка', hide=True)
         ]
         return text, buttons
 
@@ -204,6 +205,7 @@ class Quiz(BarTourScene):
         for title in events[event][1]:
             buttons.append(alice.ALICE.create_button(title=title, hide=True))
         buttons.append(alice.ALICE.create_button(title="Выбрать тематику", hide=True))
+        return buttons
 
     def _create_new_question(self, request: Request,):
         event = next(alice.SESSION_STORAGE[request.user_id]["questions"])
@@ -212,12 +214,13 @@ class Quiz(BarTourScene):
         return event, right_answer, buttons
 
     def reply(self, request: Request):
+        logger.info(alice.SESSION_STORAGE[request.user_id])
         if request.user_id not in alice.SESSION_STORAGE:
             alice.SESSION_STORAGE[request.user_id] = {}
             text, buttons = self._choose_theme()
             return self.make_response(text=text, buttons=buttons)
         else:
-            if request.command in ['история', "по местам", "коктейли", "создание и подача"] and "type" not in \
+            if request.command in ['история', "места", "коктейли", "сервировка"] and "type" not in \
                     alice.SESSION_STORAGE[request.user_id]:
                 alice.SESSION_STORAGE[request.user_id]["type"] == request.command
                 _a = list(filter(lambda x: request.command == events[x][2], events.keys()))
@@ -232,7 +235,7 @@ class Quiz(BarTourScene):
 
                 return self.make_response(text=event, buttons=buttons)
             elif request.command == alice.SESSION_STORAGE[request.user_id]["answer"]:
-                event, right_answer, buttons = self._create_new_question()
+                event, right_answer, buttons = self._create_new_question(request)
                 text = ('Верно!\n' f'{event}')
                 return self.make_response(text=text, buttons=buttons)
             elif request.command == 'выбрать тематику':
