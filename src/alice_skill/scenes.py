@@ -222,16 +222,16 @@ class Quiz(BarTourScene):
         else:
             if request.command in ['история', "места", "коктейли", "сервировка"] and "type" not in \
                     alice.SESSION_STORAGE[request.user_id]:
-                alice.SESSION_STORAGE[request.user_id]["type"] == request.command
+                alice.SESSION_STORAGE[request.user_id].update(type=request.command)
                 _a = list(filter(lambda x: request.command == events[x][2], events.keys()))
                 shuffle(_a)
                 inf_list = cycle(_a)
-                alice.SESSION_STORAGE[request.user_id]["questions"] == inf_list
+                alice.SESSION_STORAGE[request.user_id].update(questions=inf_list)
 
                 event, right_answer, buttons = self._create_new_question(request)
 
-                alice.SESSION_STORAGE[request.user_id]["event"] == event
-                alice.SESSION_STORAGE[request.user_id]["answer"] == right_answer
+                alice.SESSION_STORAGE[request.user_id].update(event=event)
+                alice.SESSION_STORAGE[request.user_id].update(answer=right_answer)
 
                 return self.make_response(state={'screen': 'quiz'}, text=event, buttons=buttons)
             elif request.command == alice.SESSION_STORAGE[request.user_id]["answer"]:
