@@ -82,11 +82,6 @@ class Scene(ABC):
 class BarTourScene(Scene):
 
     def handle_global_intents(self, request):
-        if alice.QUIZ in request.scene:
-            return Quiz()
-        elif alice.QUEST in request.scene:
-            return Quest()
-
         if alice.START_TOUR in request.intents:
             return StartQuest()
         elif alice.START_ACTIVITY in request.intents:
@@ -120,8 +115,9 @@ class StartQuest(BarTourScene):
         return self.make_response(text, state={
             'screen': 'start_tour'
         }, buttons=[
-            alice.ALICE.create_button('Спасская башня'),
-            alice.ALICE.create_button('Софийский собор'),
+            alice.ALICE.create_button('Квест'),
+            alice.ALICE.create_button('Викторина'),
+            alice.ALICE.create_button('Советник')
         ])
 
     def handle_local_intents(self, request: Request):
