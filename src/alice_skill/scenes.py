@@ -249,8 +249,8 @@ class Place(enum.Enum):
         distances.update(goat=cls.distance(location, GOAT_location))
         min_distanation = min(distances.values())
 
-        #debug stuff
-        print(distances)
+        #logger
+        logger.info(distances)
 
         if distances['enchantress'] == min_distanation: return cls.ENCHANTRESS
         if distances['zavod_bar'] == min_distanation: return cls.ZAVOD_BAR
