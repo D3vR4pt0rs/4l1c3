@@ -82,6 +82,11 @@ class Scene(ABC):
 class BarTourScene(Scene):
 
     def handle_global_intents(self, request):
+        if alice.QUIZ in request.session["scene"]:
+            return Quiz()
+        elif alice.QUEST in request.session["scene"]:
+            return Quest()
+
         if alice.START_TOUR in request.intents:
             return StartQuest()
         elif alice.START_ACTIVITY in request.intents:
@@ -217,7 +222,7 @@ class Quiz(BarTourScene):
         if request.user_id not in alice.SESSION_STORAGE:
             alice.SESSION_STORAGE[request.user_id] = {}
             text, buttons = self._choose_theme()
-            return self.make_response(text=text, buttons=buttons)
+            return self.make_response(state={'screen': 'quiz'}, text=text, buttons=buttons)
         else:
             if request.command in ['история', "места", "коктейли", "сервировка"] and "type" not in \
                     alice.SESSION_STORAGE[request.user_id]:
@@ -232,17 +237,17 @@ class Quiz(BarTourScene):
                 alice.SESSION_STORAGE[request.user_id]["event"] == event
                 alice.SESSION_STORAGE[request.user_id]["answer"] == right_answer
 
-                return self.make_response(text=event, buttons=buttons)
+                return self.make_response(state={'screen': 'quiz'}, text=event, buttons=buttons)
             elif request.command == alice.SESSION_STORAGE[request.user_id]["answer"]:
                 event, right_answer, buttons = self._create_new_question(request)
                 text = ('Верно!\n' f'{event}')
-                return self.make_response(text=text, buttons=buttons)
+                return self.make_response(state={'screen': 'quiz'}, text=text, buttons=buttons)
             elif request.command == 'выбрать тематику':
                 text, buttons = self._choose_theme()
-                return self.make_response(text=text, buttons=buttons)
+                return self.make_response(state={'screen': 'quiz'}, text=text, buttons=buttons)
             else:
                 buttons = self._create_buttons(alice.SESSION_STORAGE[request.user_id]["event"], alice.SESSION_STORAGE[request.user_id]["answer"])
-                return self.make_response(text=("Неверно! Попробуй еще раз."), buttons= buttons)
+                return self.make_response(state={'screen': 'quiz'}, text=("Неверно! Попробуй еще раз."), buttons= buttons)
 
     def handle_local_intents(self, request: Request):
         if alice.STOP_ACTIVITY:
