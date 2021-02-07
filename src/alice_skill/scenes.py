@@ -19,7 +19,6 @@ import alice_skill.constants as alice
 from alice_skill.helper import check_time
 from alice_skill.request import Request
 
-
 with open("quiz.csv", "r", encoding="windows-1251") as csvfile:
     data = csv.DictReader(csvfile, delimiter=";", quotechar=" ")
     events = {x["question"]: [x["right_answer"], [x["wrong_answer1"], x["wrong_answer2"]], x["type"]] for x in data}
@@ -54,7 +53,7 @@ class Scene(ABC):
         raise NotImplementedError()
 
     def fallback(self):
-        return self.make_response('Извините, я вас не поняла. Пожалуйста, попробуйте переформулировать вопрос.')
+        return self.make_response('Извините, я Вас не поняла. Пожалуйста, попробуйте переформулировать вопрос.')
 
     def make_response(self, text, tts=None, card=None, state=None, buttons=None, directives=None):
         response = {
@@ -92,12 +91,12 @@ class BarTourScene(Scene):
 
 class Welcome(BarTourScene):
     def reply(self, request: Request):
-        text = ('Добро пожаловать в Барские приключения. '
-                'Данный навык призван рассказать историю алкоголя Великого Новгорода и провести по наиболее значимым местам.'
-                'Но прежде дайте доступ к геолокации, чтобы я понимал, где вы находитесь.')
+        text = ('Добро пожаловать в Барские приключения.'
+                'Я могу порекомендовать Вам хорошее месте, чтобы провести время или немного развлечь викториной.'
+                'Для работы мне трубуется доступ к геолокации, даете разрешение?')
         directives = {'request_geolocation': {}}
         return self.make_response(text, buttons=[
-            alice.ALICE.create_button('Расскажи экскурсию', hide=True),
+            alice.ALICE.create_button('Да', hide=True),
         ], directives=directives)
 
     def handle_local_intents(self, request: Request):
@@ -112,11 +111,10 @@ class Welcome(BarTourScene):
 class StartQuest(BarTourScene):
     def reply(self, request: Request):
         alice.SESSION_STORAGE.pop(request.user_id, None)
-        text = f'{check_time()}, путник. Не хочешь ли поучаствовать в квесте и узнать историю алкоголя в Великом Новгороде?'
+        text = ''
         return self.make_response(text, state={
             'screen': 'start_tour'
         }, buttons=[
-            alice.ALICE.create_button('Квест'),
             alice.ALICE.create_button('Викторина'),
             alice.ALICE.create_button('Советник')
         ])
@@ -209,7 +207,7 @@ class Quiz(BarTourScene):
         buttons.append(alice.ALICE.create_button(title="Выбрать тематику", hide=True))
         return buttons
 
-    def _create_new_question(self, request: Request,):
+    def _create_new_question(self, request: Request, ):
         event = next(alice.SESSION_STORAGE[request.user_id]["questions"])
         right_answer = events[event][0]
         buttons = self._create_buttons(event, right_answer)
@@ -244,8 +242,10 @@ class Quiz(BarTourScene):
                 text, buttons = self._choose_theme()
                 return self.make_response(state={'screen': 'quiz'}, text=text, buttons=buttons)
             else:
-                buttons = self._create_buttons(alice.SESSION_STORAGE[request.user_id]["event"], alice.SESSION_STORAGE[request.user_id]["answer"])
-                return self.make_response(state={'screen': 'quiz'}, text=("Неверно! Попробуй еще раз."), buttons= buttons)
+                buttons = self._create_buttons(alice.SESSION_STORAGE[request.user_id]["event"],
+                                               alice.SESSION_STORAGE[request.user_id]["answer"])
+                return self.make_response(state={'screen': 'quiz'}, text=("Неверно! Попробуй еще раз."),
+                                          buttons=buttons)
 
     def handle_local_intents(self, request: Request):
         if alice.STOP_ACTIVITY:
@@ -254,7 +254,7 @@ class Quiz(BarTourScene):
 
 class Advice(BarTourScene):
     def reply(self, request: Request):
-        return self.make_response(text='Советы давать не могу и тебе не советую')
+        return Place.place_from_geolocation(self, request)
 
     def handle_local_intents(self, request: Request):
         pass
@@ -322,18 +322,71 @@ def move_to_place_scene(request: Request):
     if place == Place.ZAVOD_BAR:
         return Zavod()
     elif place == Place.GOAT:
-        return None
+        return Goat()
     elif place == Place.ENCHANTRESS:
-        return None
+        return Enchantress()
     elif place == Place.JAZZ_BLUES:
-        return None
+        return Jazz_blues()
 
 
-class Zavod(BarTourScene):
+class Zavod(BarTourScene):  # TODO
     def reply(self, request: Request):
-        tts = ('Завод бар. Данный бар располагается в бывшей проходной завода Алкон.'
-               'В данном заведении русская кухня. Если хотите узнать больше о Алконе, пройдите наш квест. '
-               )
+        tts = ('"Завод бар" располагается на территории завода Алкон,'
+               'его отличает от других баров русская направленность в кухне и напитках.'
+               'А ещё там есть лавка с продукцией Алкона.'
+               )  # TODO короткое описание завода
+        return self.make_response(
+            text='',
+            tts=tts,
+            card=alice.create_image_gallery(image_ids=[
+                '213044/6b28d20a9faa88496151'
+            ])
+        )
+
+    def handle_local_intents(self, request: Request):
+        pass
+
+
+class Enchantress(BarTourScene):  # TODO
+    def reply(self, request: Request):
+        tts = ('"Чародейка" - это одно из самых уникальных мест в Великом Новгороде.'
+               'Это второе заведение, помимо "Zavod" бара, которое связано с главным местным производителем алкоголя Алконом.'
+               'Бар отличается от других своими напитками и атмосферой.'
+               )  # TODO короткое описание чародейки
+        return self.make_response(
+            text='',
+            tts=tts,
+            card=alice.create_image_gallery(image_ids=[
+                '213044/6b28d20a9faa88496151'
+            ])
+        )
+
+    def handle_local_intents(self, request: Request):
+        pass
+
+
+class Jazz_blues(BarTourScene):  # TODO
+    def reply(self, request: Request):
+        tts = ('Jazz&Blues был бы самым обычным баром, если бы не музыка.'
+               'В этом баре Вы найдете уютную атмосферу, хорошую музыку или даже попадете на концерт.'
+               )  # TODO короткое описание J&B
+        return self.make_response(
+            text='',
+            tts=tts,
+            card=alice.create_image_gallery(image_ids=[
+                '213044/6b28d20a9faa88496151'
+            ])
+        )
+
+    def handle_local_intents(self, request: Request):
+        pass
+
+
+class Goat(BarTourScene):  # TODO
+    def reply(self, request: Request):
+        tts = ('"Нафига козе баян" - это отличное место, чтобы провести вечер в хорошей компании.'
+               'Тут Вас встретит отличная еда'
+               )  # TODO короткое описание Нафига козе баян
         return self.make_response(
             text='',
             tts=tts,
