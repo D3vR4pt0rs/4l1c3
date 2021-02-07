@@ -96,7 +96,7 @@ class Welcome(BarTourScene):
                 'Для работы мне трубуется доступ к геолокации, даете разрешение?')
         directives = {'request_geolocation': {}}
         return self.make_response(text, buttons=[
-            alice.ALICE.create_button('Да', hide=True),
+            alice.ALICE.create_button('Начни экскурсию', hide=True),  # все хуйня, TODO надо понять, потому что требует расскажи экускурсию, а по логике это запрос геолокации
         ], directives=directives)
 
     def handle_local_intents(self, request: Request):
